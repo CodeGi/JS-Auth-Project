@@ -40,7 +40,8 @@ const userSchema = new mongoose.Schema({
   email: String ,
   password: String,
   googleId:String ,
-  facebookId: String
+  facebookId: String,
+  secret: String
 });
 
 userSchema.plugin(passportLocalMongoose); //it will hash and salt and save our users
@@ -148,12 +149,48 @@ app.get('/logout', function(req, res){
 });
 
 app.get("/secrets" , function(req , res){
+User.find({"secret": {$ne: null}}, function(err, foundUsers) {
+  if(err){
+    console.log(err);
+  }else{
+    if(foundUsers){
+      res.render("secrets" , {userSubmittedSecrets: foundUsers});
+    }
+  }
+})
+});
+
+app.get('/submit', function(req, res){
   if(req.isAuthenticated()){
-    res.render("secrets")
+    res.render("submit")
   } else{
     res.redirect("/login");
   }
 });
+
+
+app.post("/submit" , function(req, res){
+const newSecret = req.body.secret;
+    User.findById(req.user.id , function(err , foundUser){
+      if(err){
+        console.log(err)
+      }else{
+        if(foundUser){
+          foundUser.secret = newSecret;
+          console.log(foundUser)
+          console.log(foundUser.secret)
+          console.log(req.user.id)
+          console.log(req.user)
+          foundUser.save(function(){
+            res.redirect("/secrets")
+          })
+        }
+      }
+    })
+  });
+
+
+
 
 app.post("/register" , function(req, res){
 User.register({username: req.body.username}, req.body.password , function(err , user){//this comes from passport local package, it allows us to not need to create mongoose new user and save user manually. Saves us time.
